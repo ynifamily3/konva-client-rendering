@@ -1,4 +1,4 @@
-import { draw, emptyImageData } from "./draw";
+import { draw, emptyImageData, sendDraw } from "./draw";
 import { ABCData } from "./schema";
 import "./style.css";
 
@@ -35,12 +35,13 @@ function fn() {
     }
     img.src = emptyImageData;
     try {
-      const result = await draw(json.data[0]);
-      if (result.size) {
-        img.width = result.size.width;
-        img.height = result.size.height;
-      }
-      img.src = result.src;
+      sendDraw(json.data[0]);
+      // const result = await draw(json.data[0]);
+      // if (result.size) {
+      //   img.width = result.size.width;
+      //   img.height = result.size.height;
+      // }
+      // img.src = result.src;
     } catch (e) {
       console.warn(e);
       alert("렌더링 오류");

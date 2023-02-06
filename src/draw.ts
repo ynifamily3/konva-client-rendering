@@ -32,6 +32,20 @@ const resolveText = async (textNode: Konva.Text) => {
   textNode.setAttr("text", "");
   textNode.setAttr("text", text);
 };
+var w = new Worker("./worker.js");
+export function drawFromClientBannerJSONWithWorker(
+  clientBannerJson: ClientBannerJSON
+) {
+  var htmlCanvas = document.createElement("canvas");
+  htmlCanvas.width = clientBannerJson.width;
+  htmlCanvas.height = clientBannerJson.height;
+  var offscreen = htmlCanvas.transferControlToOffscreen();
+  w.postMessage({ canvas: offscreen, clientBannerJson: clientBannerJson }, [
+    offscreen,
+  ]);
+
+  return htmlCanvas;
+}
 
 export async function drawFromClientBannerJSON(
   clientBannerJson: ClientBannerJSON
@@ -48,19 +62,15 @@ export async function drawFromClientBannerJSON(
     listening: false,
   });
   const layer = new Konva.Layer();
-
   clientBannerJson.layers.forEach((item) => {
     const x = Konva.Node.create(item);
     layer.add(x);
   });
-
   const imageNodes: Konva.Image[] = layer.find("Image");
   const imageWork = Promise.all(imageNodes.map(resolveImage));
   const textNodes: Konva.Text[] = layer.find("Text");
   const textWork = Promise.all(textNodes.map(resolveText));
-
   await Promise.all([imageWork, textWork]);
-
   stage.add(layer);
 
   return await new Promise<ABCResult>((resolve, reject) => {
@@ -102,4 +112,11 @@ export async function draw(item: ABCItem): Promise<ABCResult> {
   }
   const clientBannerJson = item.src;
   return await drawFromClientBannerJSON(clientBannerJson);
+}
+
+export function sendDraw(item: ABCItem) {
+  const clientBannerJson = item.src;
+  if (typeof clientBannerJson === "string") return;
+  const canvas = drawFromClientBannerJSONWithWorker(clientBannerJson);
+  document.body.appendChild(canvas);
 }
